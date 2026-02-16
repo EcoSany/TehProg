@@ -3,6 +3,7 @@ from tkinter import ttk, messagebox
 from datetime import datetime
 from dataclasses import dataclass
 import re
+from pressure_facade import PressureFacade
 
 @dataclass
 class Pressure:
@@ -10,13 +11,11 @@ class Pressure:
     height: float
     count: int
 
-    pattern = r'(\d{4}\.\d{2}\.\d{2})\s+(\d.+)\s+(\d+)'
-
     def to_list(self):
         return [self.date.strftime("%Y.%m.%d"), self.height, self.count]
 
     def parse_line(line):
-        match = re.search(Pressure.pattern, line)
+        match = re.search(r'(\d{4}\.\d{2}\.\d{2})\s+(\d.+)\s+(\d+)', line)
         if not match:
             return None
         date_str, h_str, c_str = match.groups()
@@ -25,33 +24,16 @@ class Pressure:
             height=float(h_str),
             count=int(c_str)
         )
-
-class PressureRepository:
-    filename = "data.txt"
-
-    def load_all(self):
-        items = []
-        try:
-            with open(PressureRepository.filename, 'r', encoding='utf-8') as f:
-                for line in f:
-                    obj = Pressure.parse_line(line)
-                    if obj: items.append(obj)
-        except FileNotFoundError:
-            open(PressureRepository.filename, 'a').close()
-        return items
-
-    def save_all(self, items):
-        with open(PressureRepository.filename, 'w', encoding='utf-8') as f:
-            for item in items:
-                line = f"{item.date.strftime('%Y.%m.%d')} {item.height} {item.count}\n"
-                f.write(line)
+    
+    def __str__(self):
+        return f"{self.date.strftime('%Y.%m.%d')} {self.height} {self.count}\n"
 
 
 class PressureApp:
     def __init__(self, root, repo):
         self.root = root
         self.repo = repo
-        self.items = self.repo.load_all()
+        self.items = self.repo.load_all(Pressure)
 
         self.setup_ui()
         self.refresh_table()
@@ -117,6 +99,6 @@ class PressureApp:
         self.refresh_table()
 
 root = tk.Tk()
-repository = PressureRepository()
+repository = PressureFacade()
 app = PressureApp(root, repository)
 root.mainloop()
