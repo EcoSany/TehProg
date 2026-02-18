@@ -1,39 +1,15 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import datetime
-from dataclasses import dataclass
-import re
-from pressure_facade import PressureFacade
-
-@dataclass
-class Pressure:
-    date: datetime.date
-    height: float
-    count: int
-
-    def to_list(self):
-        return [self.date.strftime("%Y.%m.%d"), self.height, self.count]
-
-    def parse_line(line):
-        match = re.search(r'(\d{4}\.\d{2}\.\d{2})\s+(\d.+)\s+(\d+)', line)
-        if not match:
-            return None
-        date_str, h_str, c_str = match.groups()
-        return Pressure(
-            date=datetime.strptime(date_str, "%Y.%m.%d").date(),
-            height=float(h_str),
-            count=int(c_str)
-        )
-    
-    def __str__(self):
-        return f"{self.date.strftime('%Y.%m.%d')} {self.height} {self.count}\n"
-
+from pressure import Pressure, PressureParseError
+from pressureFacade import PressureFacade
+from logger import Logger
 
 class PressureApp:
     def __init__(self, root, repo):
         self.root = root
         self.repo = repo
-        self.items = self.repo.load_all(Pressure)
+        self.items = self.repo.load_all()
 
         self.setup_ui()
         self.refresh_table()
@@ -75,28 +51,30 @@ class PressureApp:
 
     def add_item(self):
         try:
-            new_obj = Pressure(
-                date=datetime.strptime(self.ent_date.get(), "%Y.%m.%d").date(),
-                height=float(self.ent_height.get()),
-                count=int(self.ent_count.get())
-            )
-            self.items.append(new_obj)
-            self.repo.save_all(self.items)
-            self.refresh_table()
-        except ValueError:
-            messagebox.showerror("Ошибка", "Проверьте правильность ввода данных")
+            raw_data = f"{self.ent_date.get()} {self.ent_height.get()} {self.ent_count.get()}"
+            new_obj = Pressure.parse_line(raw_data)
+            if new_obj:
+                self.items.append(new_obj)
+                self.repo.save_all(self.items)
+                self.refresh_table()
+        except PressureParseError as e:
+            Logger.log(f"Ошибка ввода пользователем: {e}")
+            messagebox.showerror("Ошибка", "Проверьте формат данных")
 
     def delete_item(self):
-        selected = self.table.selection()
-        if not selected:
-            return
+        try:
+            selected = self.table.selection()
+            if not selected:
+                return
 
-        for item_id in selected:
-            index = self.table.index(item_id)
-            del self.items[index]
-        
-        self.repo.save_all(self.items)
-        self.refresh_table()
+            for item_id in selected:
+                index = self.table.index(item_id)
+                del self.items[index]
+            
+            self.repo.save_all(self.items)
+            self.refresh_table()
+        except Exception as e:
+            Logger.log(f"Ошибка при удалении: {e}")
 
 root = tk.Tk()
 repository = PressureFacade()
