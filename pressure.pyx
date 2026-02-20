@@ -3,6 +3,7 @@ from datetime import datetime
 
 class PressureParseError(Exception): pass
 
+
 cdef class Pressure:
     cdef public object date
     cdef public double height
