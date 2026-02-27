@@ -1,0 +1,4 @@
+ADD 2026.02.27; 150.5; 800
+REM count <= 800
+SAVE results.txt
+PRINT Привет

@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import datetime
+from tkinter import filedialog
+from commandProcessor import CommandProcessor
 from pressure import Pressure, PressureParseError
 from pressureFacade import PressureFacade
 from logger import Logger
@@ -41,7 +43,10 @@ class PressureApp:
         self.table.pack(padx=10, pady=5, fill="both")
 
         btn_del = ttk.Button(self.root, text="Удалить выбранное", command=self.delete_item)
-        btn_del.pack(pady=10)
+        btn_del.pack(pady=5)
+
+        self.btn_commands = ttk.Button(self.root, text="Загрузить файл команд", command=self.load_commands)
+        self.btn_commands.pack(pady=5)
 
     def refresh_table(self):
         for row in self.table.get_children():
@@ -60,6 +65,18 @@ class PressureApp:
         except PressureParseError as e:
             Logger.log(f"Ошибка ввода пользователем: {e}")
             messagebox.showerror("Ошибка", "Проверьте формат данных")
+    
+    def load_commands(self):
+        file_path = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
+        if file_path:
+            try:
+                processor = CommandProcessor(self)
+                processor.read_command(file_path)
+                self.refresh_table()
+                messagebox.showinfo("Успех", "Команды выполнены")
+            except Exception as e:
+                Logger.log(f"Ошибка команд: {e}")
+                messagebox.showerror("Ошибка", f"Не удалось выполнить команды: {e}")
 
     def delete_item(self):
         try:
@@ -76,7 +93,8 @@ class PressureApp:
         except Exception as e:
             Logger.log(f"Ошибка при удалении: {e}")
 
-root = tk.Tk()
-repository = PressureFacade()
-app = PressureApp(root, repository)
-root.mainloop()
+if __name__ == "__main__":
+    root = tk.Tk()
+    repository = PressureFacade()
+    app = PressureApp(root, repository)
+    root.mainloop()

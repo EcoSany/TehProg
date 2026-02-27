@@ -25,6 +25,19 @@ class Pressure:
             height=float(h_str),
             count=int(c_str)
         )
+    
+    @staticmethod
+    def from_csv(csv_line):
+        parts = [p.strip() for p in csv_line.split(';')]
+        if len(parts) < 3:
+            raise PressureParseError("Недостаточно данных в CSV")
+        
+        d = datetime.strptime(parts[0], "%Y.%m.%d").date()
+        return Pressure(
+            date=d,
+            height=float(parts[1]),
+            count=int(parts[2])
+        )
 
     def __str__(self):
         return f"{self.date.strftime('%Y.%m.%d')} {self.height} {self.count}\n"
